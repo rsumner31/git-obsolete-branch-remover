@@ -117,4 +117,27 @@ public class MainTest {
         }
     }
 
+    @Test
+    public void forceRemoveRemote() throws Exception {
+        try (
+                RemoteRepoMock remoteRepoMock = new RemoteRepoMock(false);
+                LocalRepoMock localRepoMock = new LocalRepoMock(remoteRepoMock.repoUrl);
+        ){
+            localRepoMock.get().checkout().setCreateBranch(true).setName("branch1").call();
+            Path workDir = ORIG_WORK_DIR.resolve("tmp/local");
+            workDir.resolve("newFile").toFile().createNewFile();
+            localRepoMock.get().add().addFilepattern(".").call();
+            localRepoMock.get().commit().setMessage("Add new file for unit test.").call();
+            localRepoMock.get().push().call();
+            System.setProperty(USER_DIR, workDir.toString());
+            final ByteArrayOutputStream out = new ByteArrayOutputStream();
+            System.setOut(new PrintStream(out));
+            Assert.assertEquals(new HashSet<>(Arrays.asList("refs/heads/branch1", "refs/heads/branch2", "refs/heads/master")), collectRefs(remoteRepoMock));
+            Main.main(new String[]{"0", "--remove", "--remote"});
+            Assert.assertEquals(new HashSet<>(Arrays.asList("refs/heads/master", "refs/heads/branch1")), collectRefs(remoteRepoMock));
+            Main.main(new String[]{"0", "--forceremove", "--remote"});
+            Assert.assertEquals(new HashSet<>(Arrays.asList("refs/heads/master")), collectRefs(remoteRepoMock));
+        }
+    }
+
 }
