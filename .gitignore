@@ -1,6 +1,0 @@
-*.iml
-.idea
-container
-/target/*
-/target/*.jar
-/tmp
